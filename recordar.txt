@@ -1,0 +1,3 @@
+> cd api-nomina-nodejs //Para posicionarse en la carpeta de la api
+
+> npm run dev //Ejecutar servidor
