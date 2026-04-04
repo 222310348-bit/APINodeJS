@@ -10,7 +10,7 @@ class Roles {
     }
 
     //Insertar rol 
-    static async CrearRol() {
+    static async CrearRol(data) {
         const {TipoRol} = data;
         const [result] = await mysqlPool.query(
             "INSERT INTO Roles (TipoRol) VALUES (?)",
@@ -22,7 +22,7 @@ class Roles {
     //Elimiar rol
     static async EliminarRol(id) {
         const [result]= await mysqlPool.query(
-            "DELETE FORM Roles WHERE IdRol_PK = ?",
+            "DELETE FROM Roles WHERE IdRol_PK = ?",
             [id]
         );
         return result.affectedRows > 0;
