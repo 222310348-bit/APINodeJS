@@ -38,7 +38,7 @@ class RolesController {//Clase que se usa para la ruta.
             const eliminado = await Roles.EliminarRol(id);
             if(eliminado){
                 res.json({
-                    mensaje: "Usuario eliminado de manera correcta"
+                    mensaje: "Rol eliminado de manera correcta"
                 });
             } else{
                 res.status(404).json({
@@ -48,7 +48,7 @@ class RolesController {//Clase que se usa para la ruta.
         }
         catch (error) {
             res.status(500).json({
-                mensaje: "Error al crear el rol",
+                mensaje: "Error al eliminar el rol",
                 error: error.message
             });
         }
