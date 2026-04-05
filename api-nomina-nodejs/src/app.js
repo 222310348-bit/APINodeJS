@@ -3,6 +3,7 @@ const cors = require('cors');
 
 // Incluir rutas a las tablas de la BD
 const usuarioRoutes = require('./routes/usuario.routes')
+const clasesRoutes = require('./routes/clases.routes');
 //
 const app = express();
 
@@ -17,6 +18,7 @@ app.get('/', (req, res) => {
 
 // Incluir app.use de las rutas de cada tabla 
 app.use('/api/usuarios', usuarioRoutes);
+app.use('/api/clases', clasesRoutes);
 //
 
 module.exports = app;
