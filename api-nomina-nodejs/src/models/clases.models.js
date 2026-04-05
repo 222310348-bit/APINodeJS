@@ -9,6 +9,14 @@ class Clases {
         return rows;
     }
 
+    //Obtener clase por ID
+    static async obtenerPorId(id) {
+        const [rows] = await mysqlPool.query(
+            "SELECT IdClase_PK, NombreC, Codigo FROM Clases WHERE IdClase_PK = ?", [id]
+        );
+        return rows[0];
+    }
+
     //Obtener clase por nombre
     static async obtenerPorNombre(nombre) {
         const [rows] = await mysqlPool.query(
