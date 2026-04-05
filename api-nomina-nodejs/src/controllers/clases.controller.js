@@ -1,4 +1,4 @@
-const Clases = require('../models/clases.model');
+const Clases = require('../models/clases.models');
 
 class ClasesController {
 
