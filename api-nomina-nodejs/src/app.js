@@ -1,30 +1,35 @@
 const express = require('express');
 const cors = require('cors');
 
-// Incluir rutas a las tablas de la BD
+// Rutas a las tablas de la BD
 const usuarioRoutes = require('./routes/usuario.routes');
+const rolesRoutes = require('./routes/roles.routes');
+const conversacionRoutes = require('./routes/conversacion.routes');
+const mensajesRoutes = require('./routes/mensajes.routes');
 const clasesRoutes = require('./routes/clases.routes');
-const usuarioClaseRoutes = require('./routes/usuario_clase.routes');
-//
+const asistenciaRoutes = require('./routes/asistencia.routes');
+const UsuarioClaseRoutes = require('./routes/usuario_clase.routes');
+
 const app = express();
 
+app.use(cors());
+app.use(express.json());
 app.use(cors());
 app.use(express.json());
 
 app.get('/', (req, res) => {
     res.json({
-        mensaje: 'API de EducatIO híbrida funcionando correctamente'
+        mensaje: 'API de nomina hibrida funcionando corecctamente'
+
     });
 });
 
-// Incluir app.use de las rutas de cada tabla 
 app.use('/api/usuarios', usuarioRoutes);
+app.use('/api/roles', rolesRoutes);
 app.use('/api/clases', clasesRoutes);
+app.use('/api/asistencias', asistenciaRoutes);
 app.use('/api/inscripciones', usuarioClaseRoutes);
-//
+app.use('/api/conversacion', conversacionRoutes);
+app.use('/api/mensajes', mensajesRoutes);
 
 module.exports = app;
-// prueba git
-// prueba git 2
-// prueba git 3
-// preuab git 4
