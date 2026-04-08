@@ -15,7 +15,7 @@ class Usuario_Clase {
         return rows;
     }
 
-    // Obtener inscripción por ID
+    // Obtener inscripción por ID 
     static async obtenerPorId(id) {
         const [rows] = await mysqlPool.query(
             `SELECT uc.IdUsCla, uc.IdUsuario_FK, uc.IdClase_FK,
@@ -28,6 +28,17 @@ class Usuario_Clase {
             [id]
         );
         return rows[0];
+    }
+
+    // Obtener inscripción por ID del usuario
+    static async obtenerClasesPorUsuario(id) {
+        const [rows] = await mysqlPool.query(
+            `SELECT IdClase_FK
+             FROM Usuario_Clase 
+             WHERE IdUsuario_FK = ?`,
+            [id]
+        );
+        return rows;
     }
 
     // Verificar si ya existe una inscripción para el mismo alumno y clase
