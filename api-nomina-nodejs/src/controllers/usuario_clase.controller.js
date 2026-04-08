@@ -46,8 +46,8 @@ class Usuario_ClaseController {
                 return res.status(404).json({ mensaje: "Usuario no encontrado" });
             }
 
-            if (usuario.IdRol_FK !== 2) {
-                return res.status(400).json({ mensaje: "Solo usuarios con rol Alumno pueden inscribirse" });
+            if (usuario.IdRol_FK !== 2 && usuario.IdRol_FK !== 3) {
+                return res.status(400).json({ mensaje: "Solo usuarios con rol Alumno o Docente pueden inscribirse" });
             }
 
             const clase = await Clases.obtenerPorId(IdClase_FK);
@@ -57,7 +57,7 @@ class Usuario_ClaseController {
 
             const yaInscrito = await Usuario_Clase.existeInscripcion(IdUsuario_FK, IdClase_FK);
             if (yaInscrito) {
-                return res.status(400).json({ mensaje: "El alumno ya está inscrito en esta clase" });
+                return res.status(400).json({ mensaje: "El usuario ya está inscrito en esta clase" });
             }
 
             const nuevaInscripcion = await Usuario_Clase.crear({ IdUsuario_FK, IdClase_FK });
