@@ -1,3 +1,5 @@
 > cd api-nomina-nodejs //Para posicionarse en la carpeta de la api
 
 > npm run dev //Ejecutar servidor
+
+> npm install jsonwebtoken bcryptjs //instalar paquetes para crear tokens de validación
