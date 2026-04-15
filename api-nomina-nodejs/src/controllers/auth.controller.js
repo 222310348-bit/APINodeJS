@@ -64,4 +64,25 @@ class AuthController{
             });
         }
     }
+
+    static async perfil(req,res){
+        try{
+            const usuario = await Usuario.findById(req.usuario.id_usuario).select('-password_hash');
+
+            if(!usuario){
+                return res.status(404).json({
+                    mensaje: 'Usuario no encontrado'
+                });
+            }
+            res.json({
+                usuario
+            });
+        }
+        catch(error){
+            console.error('Error al obtener perfil:', error);
+            res.status(500).json({
+                mensaje: 'Error en el servidor'
+            });
+        }
+    }
 }
