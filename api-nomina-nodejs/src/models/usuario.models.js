@@ -18,9 +18,9 @@ class Usuario {
     }
 
     //Obtener usuario por correo
-    static async obtenerPorCorreo( correo) {
+    static async obtenerPorCorreo( Correo) {
         const [rows] = await mysqlPool.query(
-            "SELECT IdUsuario_PK,NombresU,ApellidosU,Correo,Contraseña,IdRol_FK FROM Usuarios WHERE Correo = ?",[correo]
+            "SELECT IdUsuario_PK,NombresU,ApellidosU,Correo,Contraseña,IdRol_FK FROM Usuarios WHERE Correo = ?",[Correo]
         );
         return rows[0];
     }

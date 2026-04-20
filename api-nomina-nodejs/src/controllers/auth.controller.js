@@ -1,19 +1,20 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const Usuario = require('../models/usuario.model');
+const Usuario = require('../models/usuario.models');
+const { mysqlPool } = require('../config/mysql');
 
 class AuthController{
     static async login(req,res){
         try{
-            const { correo, password} = req.body;
+            const { Correo, Contrasena} = req.body;
 
-            if (!correo || !password) {
+            if (!Correo || !Contrasena) {
                 return res.status(400).json({
-                    mensaje: 'correo y password son obligatorios'
+                    mensaje: 'Correo y contraseña son obligatorios'
                 });
             }
 
-            const usuario = await Usuario.findOne({ correo });
+            const usuario = await Usuario.obtenerPorCorreo(Correo);
 
             if (!usuario){
                 return res.status(401).json({
@@ -21,26 +22,29 @@ class AuthController{
                 });
             }
 
-            if(!usuario.activo){
-                return res.status(403).json({
-                    mensaje:'Usuario inactivo'
-                });
-            }
+            let passwordValido = false;
 
-            const passwordValido = await bcrypt.compare(password, usuario.password_hash);
+            if (usuario.Contraseña.startsWith('$2')) {
+                passwordValido = await bcrypt.compare(Contrasena, usuario.Contraseña);
+            } else {
+            if (Contrasena === usuario.Contraseña) {
+                passwordValido = true;
 
-            if(!passwordValido){
-                return res.status(401).json({
-                    mensaje: 'Credenciales inválidas'
-                });
+                // 🔥 migración automática
+                const hash = await bcrypt.hash(Contrasena, 10);
+
+                await mysqlPool.query(
+                "UPDATE Usuarios SET Contraseña = ? WHERE IdUsuario_PK = ?",
+                [hash, usuario.IdUsuario_PK]);
             }
+        }
 
             const token = jwt.sign(
                 {
-                    id_usuario: usuario.id_usuario,
-                    nombre_usuario: usuario.nombre,
-                    correo: usuario.correo,
-                    rol: usuario.rol
+                    id_usuario: usuario.IdUsuario_PK,
+                    nombre_usuario: usuario.NombresU,
+                    Correo: usuario.Correo,
+                    rol: usuario.IdRol_FK
                 },
                 process.env.JWT_SECRET,
                 { expiresIn: process.env.JWT_EXPIRES_IN || '1h'}
@@ -50,10 +54,10 @@ class AuthController{
                 mensaje:'Login correcto',
                 token,
                 usuario: {
-                    id_usuario: usuario.id_usuario,
-                    nombre_usuario: usuario.nombre,
-                    correo: usuario.correo,
-                    rol: usuario.rol
+                    id_usuario: usuario.IdUsuario_PK,
+                    nombre_usuario: usuario.NombresU,
+                    Correo: usuario.Correo,
+                    rol: usuario.IdRol_FK
                 }
             });
         }
@@ -86,3 +90,5 @@ class AuthController{
         }
     }
 }
+
+module.exports = AuthController;

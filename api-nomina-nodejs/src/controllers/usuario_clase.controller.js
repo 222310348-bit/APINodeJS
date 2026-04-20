@@ -95,61 +95,64 @@ class Usuario_ClaseController {
     }
 
     static async BajaClase(req, res) {
-        try {
-            const { idInscripcion } = req.params;
-            const { idUsuarioSolicitante } = req.body;
+    try {
+        const { idInscripcion } = req.params;
 
-            if (!idUsuarioSolicitante) {
-                return res.status(400).json({ mensaje: "idUsuarioSolicitante es requerido" });
-            }
+        const idUsuarioSolicitante = req.usuario.id_usuario;
 
-            const inscripcion = await Usuario_Clase.obtenerInscripcionConDetalles(idInscripcion);
-            if (!inscripcion) {
-                return res.status(404).json({ mensaje: "Inscripción no encontrada" });
-            }
+        const inscripcion = await Usuario_Clase.obtenerInscripcionConDetalles(idInscripcion);
+        if (!inscripcion) {
+            return res.status(404).json({ mensaje: "Inscripción no encontrada" });
+        }
 
-            const usuarioSolicitante = await Usuario.obtenerPorId(idUsuarioSolicitante);
-            if (!usuarioSolicitante) {
-                return res.status(404).json({ mensaje: "Usuario solicitante no encontrado" });
-            }
+        const usuarioSolicitante = await Usuario.obtenerPorId(idUsuarioSolicitante);
+        if (!usuarioSolicitante) {
+            return res.status(404).json({ mensaje: "Usuario solicitante no encontrado" });
+        }
 
-            const esAlumnoMismo = inscripcion.IdUsuario_FK === idUsuarioSolicitante && usuarioSolicitante.IdRol_FK === 2;
-            const esDocente = usuarioSolicitante.IdRol_FK === 3;
+        const idAlumno = Number(inscripcion.IdUsuario_FK);
+        const idSolicitante = Number(idUsuarioSolicitante);
+        const rolSolicitante = Number(usuarioSolicitante.IdRol_FK);
 
-            if (!esAlumnoMismo && !esDocente) {
-                return res.status(403).json({ 
-                    mensaje: "No tienes permisos para dar de baja esta inscripción. Solo el alumno o un docente pueden hacerlo" 
-                });
-            }
+        const esAlumnoMismo = idAlumno === idSolicitante && rolSolicitante === 2;
+        const esDocente = rolSolicitante === 3;
 
-            if (esDocente) {
-                const docentesClase = await Usuario_Clase.obtenerDocentesClase(inscripcion.IdClase_FK);
-                if (!docentesClase.includes(idUsuarioSolicitante)) {
-                    return res.status(403).json({ 
-                        mensaje: "Solo los docentes de esta clase pueden dar de baja a los alumnos" 
-                    });
-                }
-            }
-
-            const eliminado = await Usuario_Clase.eliminar(idInscripcion);
-            if (!eliminado) {
-                return res.status(500).json({ mensaje: "No se pudo procesar la baja" });
-            }
-
-            res.json({
-                mensaje: "Baja de clase realizada correctamente",
-                data: {
-                    alumno: `${inscripcion.NombresU} ${inscripcion.ApellidosU}`,
-                    clase: inscripcion.NombreC
-                }
-            });
-        } catch (error) {
-            res.status(500).json({
-                mensaje: "Error al procesar la baja de clase",
-                error: error.message
+        if (!esAlumnoMismo && !esDocente) {
+            return res.status(403).json({ 
+                mensaje: "No tienes permisos para dar de baja esta inscripción" 
             });
         }
+
+        if (esDocente) {
+            const docentesClase = await Usuario_Clase.obtenerDocentesClase(inscripcion.IdClase_FK);
+
+            if (!docentesClase.includes(idSolicitante)) {
+                return res.status(403).json({ 
+                    mensaje: "Solo los docentes de esta clase pueden dar de baja a los alumnos" 
+                });
+            }
+        }
+
+        const eliminado = await Usuario_Clase.eliminar(idInscripcion);
+        if (!eliminado) {
+            return res.status(500).json({ mensaje: "No se pudo procesar la baja" });
+        }
+        res.json({
+            mensaje: "Baja de clase realizada correctamente",
+            data: {
+                alumno: `${inscripcion.NombresU} ${inscripcion.ApellidosU}`,
+                clase: inscripcion.NombreC
+            }
+        });
+
+    } catch (error) {
+        console.error("Error en BajaClase:", error);
+        res.status(500).json({
+            mensaje: "Error al procesar la baja de clase",
+            error: error.message
+        });
     }
+}
 }
 
 module.exports = Usuario_ClaseController;

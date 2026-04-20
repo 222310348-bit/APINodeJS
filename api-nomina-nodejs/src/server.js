@@ -1,22 +1,21 @@
 require('dotenv').config();
 const app = require('./app');
-const connectMongo = require('./config/mongo');
+const connectMongoDB = require('./config/mongodb');
 const { connectMySQL } = require('./config/mysql');
 const PORT = process.env.PORT || 3000;
 
 async function iniciarServidor() {
     try {
+        await connectMongoDB();
         await connectMySQL();
-        await connectMongo();
         app.listen(PORT, () => {
-            console.log("Servidor ejecuntandose en puerto " + PORT);
+            console.log("Servidor ejecutandose en puerto " + PORT);
         });
-    } catch (error) {
-        console.log("Error al iniciar servidor");
-        console.log(error);
+    } 
+    catch (error) {
+        console.error('Error al iniciar el servidor:');
+        console.error(error);
     }
-    
 }
-
 
 iniciarServidor();

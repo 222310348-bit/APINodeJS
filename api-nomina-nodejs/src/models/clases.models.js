@@ -25,14 +25,27 @@ class Clases {
         return rows[0];
     }
 
+    //Obtener clases por usuario
+    static async obtenerClasesPorUsuario(idUsuario) {
+    const [rows] = await mysqlPool.query(
+        `SELECT c.IdClase_PK, c.NombreC, c.Codigo
+         FROM Clases c
+         JOIN Usuario_Clase uc ON c.IdClase_PK = uc.IdClase_FK
+         WHERE uc.IdUsuario_FK = ?`,
+        [idUsuario]
+    );
+
+    return rows;
+}
+
     //Crear nueva clase
     static async crear(data) {
-        const { NombreC, Codigo } = data;
+        const { IdClase_PK,NombreC, Codigo } = data;
         const [result] = await mysqlPool.query(
-            "INSERT INTO Clases (NombreC, Codigo) VALUES (?, ?)",
-            [NombreC, Codigo]
+            "INSERT INTO Clases (IdClase_PK, NombreC, Codigo) VALUES (?, ?, ?)",
+            [IdClase_PK, NombreC, Codigo]
         );
-        return { IdClase_PK: result.insertId, NombreC, Codigo }
+        return { IdClase_PK, NombreC, Codigo }
     }
 
     //Eliminar  clase

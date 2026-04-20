@@ -1,51 +1,103 @@
-// Etapa 5, Paso 5.1
-// Empezaremos creando las funciones básicas para administrar las conversaciones.
+const Conversacion = require('../models/conversacion.models');
 
-// Importamos el Modelo (El molde que creamos en la Etapa 4)
-const Conversacion = require('../models/conversacion.model');
-
-// =========================================================
-// FUNCIÓN: crearConversacion
-// Objetivo: Guardar una nueva conversación en la Base de Datos
-// =========================================================
 const crearConversacion = async (req, res) => {
     try {
-        // 1. Extraemos los datos que nos envía el usuario (o la app de MySQL)
-        // 'req.body' es el cuerpo de la petición. Es como el sobre que trae la información.
+        const usuario = req.usuario;
+
         const { 
             nombreConversacion, 
             claseId, 
             esDirect, 
-            participantes, 
-            administradorPrincipal 
+            participanteId,
+            participantes: participantesBody
         } = req.body;
 
-        // 2. Preparamos el objeto usando el molde (Modelo)
-        // Fíjate cómo estructuramos los datos para que coincidan con nuestro Schema
+        //  VALIDACIONES
+        if (esDirect) {
+            if (!participanteId) {
+                return res.status(400).json({
+                    mensaje: 'Debes enviar el id del otro participante'
+                });
+            }
+
+            if (participanteId === usuario.id_usuario) {
+                return res.status(400).json({
+                    mensaje: 'No puedes crear una conversación contigo mismo'
+                });
+            }
+
+            //  EVITAR DUPLICADOS
+            const existente = await Conversacion.findOne({
+                esDirect: true,
+                participantes: {
+                    $all: [usuario.id_usuario, participanteId]
+                }
+            });
+
+            if (existente) {
+                return res.status(400).json({
+                    mensaje: 'Ya existe una conversación entre estos usuarios'
+                });
+            }
+        }
+
+        if (usuario.rol === 2 && !esDirect) {
+            return res.status(403).json({
+                mensaje: 'Un alumno solo puede crear conversaciones directas'
+            });
+        }
+
+        if (!esDirect && !claseId) {
+            return res.status(400).json({
+                mensaje: 'Las conversaciones grupales deben tener claseId'
+            });
+        }
+
+        //  PARTICIPANTES AUTOMÁTICOS
+        let participantes = [];
+
+        if (esDirect) {
+            participantes = [
+            usuario.id_usuario,
+            participanteId];
+        } 
+        else {
+            if (!Array.isArray(participantesBody) || participantesBody.length === 0) {
+                return res.status(400).json({
+                    mensaje: 'Debes enviar participantes para la conversación grupal'
+                });
+            }
+
+            //  Agregar al creador + los demás
+            participantes = [
+                usuario.id_usuario,
+                ...participantesBody
+            ];
+
+            // Eliminar duplicados
+            participantes = [...new Set(participantes)];
+        }
+
         const nuevaConversacion = new Conversacion({
             nombreConversacion,
-            claseId,
+            claseId: esDirect ? null : claseId,
             esDirect,
             participantes,
             administradores: {
-                principal: administradorPrincipal,
-                designados: [] // Empieza vacío
+                principal: usuario.id_usuario,
+                designados: []
             }
         });
 
-        // 3. Guardamos en la base de datos de verdad (Esto toma tiempo, por eso el 'await')
         const conversacionGuardada = await nuevaConversacion.save();
 
-        // 4. Si todo salió bien, le respondemos al usuario con un mensaje de éxito (Status 201 = Creado)
         res.status(201).json({
             mensaje: 'Conversación creada exitosamente',
             conversacion: conversacionGuardada
         });
 
     } catch (error) {
-        // 5. Si algo falla (ej. el usuario olvidó mandar el nombreConversacion), caemos aquí
         console.error('Error al crear conversación:', error);
-        // Respondemos con un error del servidor (Status 500)
         res.status(500).json({
             mensaje: 'Error al intentar crear la conversación',
             error: error.message
@@ -53,81 +105,129 @@ const crearConversacion = async (req, res) => {
     }
 };
 
-// 2. AGREGAR PARTICIPANTE
+//  AGREGAR PARTICIPANTE
 const agregarParticipante = async (req, res) => {
     try {
-        // 'req.params.id' captura el ID de la URL (ej. /api/conversaciones/ID_AQUI/participantes)
-        const { id } = req.params; 
-        const { IDalumno } = req.body; // El ID del alumno viene en el cuerpo (JSON)
+        const { id } = req.params;
+        const { idUsuario } = req.body;
 
-        // findByIdAndUpdate busca el documento y lo modifica.
-        // $push es un comando de Mongo que significa "Empuja este valor dentro de este array"
-        const conversacionActualizada = await Conversacion.findByIdAndUpdate(
-            id,
-            { $push: { participantes: IDalumno } },
-            { returnDocument: 'after' } // Obliga a Mongoose a devolver el documento YA actualizado
-        );
+        const conversacion = await Conversacion.findById(id);
 
-        if (!conversacionActualizada) {
+        if (!conversacion) {
             return res.status(404).json({ mensaje: 'Conversación no encontrada' });
         }
 
-        res.status(200).json({ mensaje: 'Participante agregado', conversacion: conversacionActualizada });
+        if (conversacion.participantes.includes(idUsuario)) {
+            return res.status(400).json({ mensaje: 'El usuario ya está en la conversación' });
+        }
+
+        conversacion.participantes.push(idUsuario);
+        await conversacion.save();
+
+        res.json({
+            mensaje: 'Participante agregado',
+            conversacion
+        });
+
     } catch (error) {
-        res.status(500).json({ mensaje: 'Error al agregar participante', error: error.message });
+        res.status(500).json({
+            mensaje: 'Error al agregar participante',
+            error: error.message
+        });
     }
 };
 
-// 3. AGREGAR ADMINISTRADOR
+
+//  AGREGAR ADMINISTRADOR
 const agregarAdministrador = async (req, res) => {
     try {
         const { id } = req.params;
-        const { IDalumno } = req.body; 
+        const { idUsuario } = req.body;
 
-        const conversacionActualizada = await Conversacion.findByIdAndUpdate(
-            id,
-            // Entramos al objeto anidado usando punto ("administradores.designados")
-            { $push: { "administradores.designados": IDalumno } },
-            { returnDocument: 'after' } 
-        );
+        const conversacion = await Conversacion.findById(id);
 
-        if (!conversacionActualizada) {
+        if (!conversacion) {
             return res.status(404).json({ mensaje: 'Conversación no encontrada' });
         }
 
-        res.status(200).json({ mensaje: 'Administrador agregado', conversacion: conversacionActualizada });
+        if (!conversacion.participantes.includes(idUsuario)) {
+            return res.status(400).json({
+                mensaje: 'El usuario debe ser participante para ser administrador'
+            });
+        }
+
+        conversacion.administradores.designados.push(idUsuario);
+        await conversacion.save();
+
+        res.json({
+            mensaje: 'Administrador agregado',
+            conversacion
+        });
+
     } catch (error) {
-        res.status(500).json({ mensaje: 'Error al agregar administrador', error: error.message });
+        res.status(500).json({
+            mensaje: 'Error al agregar administrador',
+            error: error.message
+        });
     }
 };
 
-// 4. DESACTIVAR CONVERSACIÓN
+
+//  DESACTIVAR CONVERSACIÓN
 const desactivarConversacion = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const conversacionActualizada = await Conversacion.findByIdAndUpdate(
+        const conversacion = await Conversacion.findByIdAndUpdate(
             id,
-            { activa: false }, // Simplemente cambiamos el campo a false
-            { returnDocument: 'after' } 
+            { activa: false },
+            { new: true }
         );
 
-        if (!conversacionActualizada) {
+        if (!conversacion) {
             return res.status(404).json({ mensaje: 'Conversación no encontrada' });
         }
 
-        res.status(200).json({ mensaje: 'Conversación desactivada', conversacion: conversacionActualizada });
+        res.json({
+            mensaje: 'Conversación desactivada',
+            conversacion
+        });
+
     } catch (error) {
-        res.status(500).json({ mensaje: 'Error al desactivar', error: error.message });
+        res.status(500).json({
+            mensaje: 'Error al desactivar',
+            error: error.message
+        });
     }
 };
 
-// Exportamos la función para poder usarla más adelante
 
-// Exportamos todas las funciones (El menú completo del Chef)
+//  OBTENER CONVERSACIONES DEL USUARIO
+const obtenerMisConversaciones = async (req, res) => {
+    try {
+        const idUsuario = req.usuario.id_usuario;
+
+        const conversaciones = await Conversacion.find({
+            participantes: idUsuario,
+            activa: true
+        });
+
+        res.json({
+            data: conversaciones
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            mensaje: 'Error al obtener conversaciones',
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     crearConversacion,
     agregarParticipante,
     agregarAdministrador,
-    desactivarConversacion
+    desactivarConversacion,
+    obtenerMisConversaciones
 };

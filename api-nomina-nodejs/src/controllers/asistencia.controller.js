@@ -6,50 +6,65 @@ class AsistenciaController {
 
     static async obtenerAsistencias(req, res) {
     try {
-        const { idUsuario } = req.body;
-        const usuario = await Usuario.obtenerPorId(idUsuario);
+        const idUsuario = req.usuario.id_usuario;
+        const rol = Number(req.usuario.rol);
+        const { idClase } = req.query; 
 
-        if (!usuario) {
-            return res.status(404).json({
-                mensaje: "Usuario no encontrado"
-            });
-        }
         let asistencias;
 
-        switch (usuario.IdRol_FK) {
-            case 1: // Administrador
-                asistencias = await Asistencia.obtenerTodos();
-                break;
-            case 2: // Estudiante
-                asistencias = await Asistencia.obtenerAsitenciaAlumno(idUsuario);
-                break;
-            case 3: // Docente
-                const clases = await Usuario_Clase.obtenerClasesPorUsuario(idUsuario);
-                if (!clases || clases.length === 0) {
-                    return res.status(404).json({
-                        mensaje: "El docente no tiene clases asignadas"
+        if (rol === 1) {
+            if (idClase) {
+                asistencias = await Asistencia.obtenerAsitenciaClase([idClase]);
+            } else {
+                return res.status(404).json({
+                    mensaje: "Ingresa el id de la clase que quiere ver las asistencias"
+                });
+            }
+        }
+
+        else if (rol === 2) {
+            if (idClase) {
+                asistencias = await Asistencia.obtenerAsistenciaAlumnoPorClase(idUsuario, idClase);
+            } else {
+                return res.status(404).json({
+                    mensaje: "Ingresa el id de la clase que quiere ver las asistencias"
+                });
+            }
+        }
+
+        else if (rol === 3) {
+            const clases = await Usuario_Clase.obtenerClasesPorUsuario(idUsuario);
+
+            if (!clases.length) {
+                return res.status(404).json({
+                    mensaje: "No tienes clases asignadas"
+                });
+            }
+            const idsClases = clases.map(c => c.IdClase_FK);
+
+            if (idClase) {
+                if (!idsClases.includes(idClase)) {
+                    return res.status(403).json({
+                        mensaje: "No tienes acceso a esta clase"
                     });
                 }
-
-                const idsClases = clases.map(c => c.IdClase_FK);
-
-                asistencias = await Asistencia.obtenerAsitenciaClase(idsClases);
-                break;
-            default:
-                return res.status(403).json({
-                    mensaje: "Rol no autorizado"
+                asistencias = await Asistencia.obtenerAsitenciaClase([idClase]);
+            } 
+            else {
+                return res.status(404).json({
+                    mensaje: "Ingresa el id de la clase que quiere ver las asistencias"
                 });
+            }
         }
-        res.json({
-            data: asistencias
-        });
-    } catch (error) {
+        res.json({ data: asistencias });
+    } 
+    catch (error) {
         res.status(500).json({
             mensaje: "Error al obtener las asistencias",
             error: error.message
-            });
-        }
+        });
     }
+}
 
     static async CrearAsistencia(req, res) {
         try{

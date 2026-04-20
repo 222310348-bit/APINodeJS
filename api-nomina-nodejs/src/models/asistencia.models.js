@@ -19,10 +19,21 @@ class Asistencia {
 
     //Obtener asistencias por ID de la clase
     static async obtenerAsitenciaClase(ids) {
-        const clases = ids.map(id => `'${id}'`).join(','); // Convertir cada ID a string y unirlos con comas
-        const [rows] = await mysqlPool.query(
-        `SELECT IdAsistencia_PK,Fecha,Hora,Estado,IdClase_FK,IdUsuario_FK FROM Asistencia 
-        WHERE IdClase_FK IN (${clases})`);
+    const placeholders = ids.map(() => '?').join(',');
+    const [rows] = await mysqlPool.query(
+        `SELECT IdAsistencia_PK, Fecha, Hora, Estado, IdClase_FK, IdUsuario_FK
+         FROM Asistencia 
+         WHERE IdClase_FK IN (${placeholders})`, ids);
+        
+        return rows;
+}
+
+    static async obtenerAsistenciaAlumnoPorClase(idUsuario, idClase) {
+    const [rows] = await mysqlPool.query(
+        `SELECT IdAsistencia_PK, Fecha, Hora, Estado, IdClase_FK, IdUsuario_FK
+         FROM Asistencia 
+         WHERE IdUsuario_FK = ? AND IdClase_FK = ?`,
+        [idUsuario, idClase]);
 
         return rows;
     }
@@ -64,5 +75,6 @@ class Asistencia {
         return result.affectedRows > 0;
     }
 }
+
 
 module.exports = Asistencia;
