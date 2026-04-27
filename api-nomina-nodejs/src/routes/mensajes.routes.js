@@ -1,6 +1,3 @@
-// Etapa 7, Paso 7.2
-// Definimos la puerta de entrada para los mensajes.
-
 const express = require('express');
 const router = express.Router();
 const mensajeController = require('../controllers/mensajes.controller');
