@@ -40,7 +40,7 @@ class ClasesController {
             return res.json(clase);
         }
         const clasesUsuario = await Clases.obtenerClasesPorUsuario(idUsuario);
-        const tieneClase = clasesUsuario.some(c => c.IdClase_PK === id);
+        const tieneClase = clasesUsuario.some(c => c.Codigo_PK === id);
 
         if (!tieneClase) {
             return res.status(403).json({
