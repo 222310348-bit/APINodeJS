@@ -4,12 +4,12 @@ class Usuario_Clase {
     // Obtener todas las inscripciones
     static async obtenerTodos() {
         const [rows] = await mysqlPool.query(
-            `SELECT uc.IdUsCla, uc.IdUsuario_FK, uc.IdClase_FK,
+            `SELECT uc.IdUsCla, uc.IdUsuario_FK, uc.Codigo_FK,
                     u.NombresU, u.ApellidosU, u.Correo,
-                    c.NombreC, c.Codigo
+                    c.NombreC, c.IdClase
              FROM Usuario_Clase uc
              JOIN Usuarios u ON uc.IdUsuario_FK = u.IdUsuario_PK
-             JOIN Clases c ON uc.IdClase_FK = c.IdClase_PK`
+             JOIN Clases c ON uc.Codigo_FK = c.Codigo_PK`
         );
 
         return rows;
@@ -18,12 +18,12 @@ class Usuario_Clase {
     // Obtener inscripción por ID 
     static async obtenerPorId(id) {
         const [rows] = await mysqlPool.query(
-            `SELECT uc.IdUsCla, uc.IdUsuario_FK, uc.IdClase_FK,
+            `SELECT uc.IdUsCla, uc.IdUsuario_FK, uc.Codigo_FK,
                     u.NombresU, u.ApellidosU, u.Correo,
-                    c.NombreC, c.Codigo
+                    c.NombreC, c.IdClase
              FROM Usuario_Clase uc
              JOIN Usuarios u ON uc.IdUsuario_FK = u.IdUsuario_PK
-             JOIN Clases c ON uc.IdClase_FK = c.IdClase_PK
+             JOIN Clases c ON uc.Codigo_FK = c.Codigo_PK
              WHERE uc.IdUsCla = ?`,
             [id]
         );
@@ -33,7 +33,7 @@ class Usuario_Clase {
     // Obtener inscripción por ID del usuario
     static async obtenerClasesPorUsuario(id) {
         const [rows] = await mysqlPool.query(
-            `SELECT IdClase_FK
+            `SELECT Codigo_FK
              FROM Usuario_Clase 
              WHERE IdUsuario_FK = ?`,
             [id]
@@ -42,22 +42,22 @@ class Usuario_Clase {
     }
 
     // Verificar si ya existe una inscripción para el mismo alumno y clase
-    static async existeInscripcion(idUsuario, idClase) {
+    static async existeInscripcion(idUsuario, codigoClase) {
         const [rows] = await mysqlPool.query(
-            "SELECT 1 FROM Usuario_Clase WHERE IdUsuario_FK = ? AND IdClase_FK = ? LIMIT 1",
-            [idUsuario, idClase]
+            "SELECT 1 FROM Usuario_Clase WHERE IdUsuario_FK = ? AND Codigo_FK = ? LIMIT 1",
+            [idUsuario, codigoClase]
         );
         return rows.length > 0;
     }
 
     // Crear nueva inscripción
     static async crear(data) {
-        const { IdUsuario_FK, IdClase_FK } = data;
+        const { IdUsuario_FK, Codigo_FK } = data;
         const [result] = await mysqlPool.query(
-            "INSERT INTO Usuario_Clase (IdUsuario_FK, IdClase_FK) VALUES (?, ?)",
-            [IdUsuario_FK, IdClase_FK]
+            "INSERT INTO Usuario_Clase (IdUsuario_FK, Codigo_FK) VALUES (?, ?)",
+            [IdUsuario_FK, Codigo_FK]
         );
-        return { IdUsCla: result.insertId, IdUsuario_FK, IdClase_FK };
+        return { IdUsCla: result.insertId, IdUsuario_FK, Codigo_FK };
     }
 
     // Eliminar inscripción
@@ -77,12 +77,12 @@ class Usuario_Clase {
     // Obtener inscripción con más detalles
     static async obtenerInscripcionConDetalles(id) {
         const [rows] = await mysqlPool.query(
-            `SELECT uc.IdUsCla, uc.IdUsuario_FK, uc.IdClase_FK,
+            `SELECT uc.IdUsCla, uc.IdUsuario_FK, uc.Codigo_FK,
                     u.NombresU, u.ApellidosU, u.IdRol_FK,
                     c.NombreC
              FROM Usuario_Clase uc
              JOIN Usuarios u ON uc.IdUsuario_FK = u.IdUsuario_PK
-             JOIN Clases c ON uc.IdClase_FK = c.IdClase_PK
+             JOIN Clases c ON uc.Codigo_FK = c.Codigo_PK
              WHERE uc.IdUsCla = ?`,
             [id]
         );
@@ -95,7 +95,7 @@ class Usuario_Clase {
             `SELECT DISTINCT u.IdUsuario_PK
              FROM Usuarios u
              WHERE u.IdRol_FK = 3 AND u.IdUsuario_PK IN (
-                 SELECT IdUsuario_FK FROM Usuario_Clase WHERE IdClase_FK = ?
+                 SELECT IdUsuario_FK FROM Usuario_Clase WHERE Codigo_FK = ?
              )`,
             [idClase]
         );

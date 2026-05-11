@@ -35,10 +35,10 @@ class Usuario_ClaseController {
 
     static async InscripcionClase(req, res) {
         try {
-            const { IdUsuario_FK, IdClase_FK } = req.body;
+            const { IdUsuario_FK, Codigo_FK } = req.body;
 
-            if (!IdUsuario_FK || !IdClase_FK) {
-                return res.status(400).json({ mensaje: "IdUsuario_FK e IdClase_FK son requeridos" });
+            if (!IdUsuario_FK || !Codigo_FK) {
+                return res.status(400).json({ mensaje: "IdUsuario_FK e Codigo_FK son requeridos" });
             }
 
             const usuario = await Usuario.obtenerPorId(IdUsuario_FK);
@@ -50,17 +50,17 @@ class Usuario_ClaseController {
                 return res.status(400).json({ mensaje: "Solo usuarios con rol Alumno o Docente pueden inscribirse" });
             }
 
-            const clase = await Clases.obtenerPorId(IdClase_FK);
+            const clase = await Clases.obtenerPorId(Codigo_FK);
             if (!clase) {
                 return res.status(404).json({ mensaje: "Clase no encontrada" });
             }
 
-            const yaInscrito = await Usuario_Clase.existeInscripcion(IdUsuario_FK, IdClase_FK);
+            const yaInscrito = await Usuario_Clase.existeInscripcion(IdUsuario_FK, Codigo_FK);
             if (yaInscrito) {
                 return res.status(400).json({ mensaje: "El usuario ya está inscrito en esta clase" });
             }
 
-            const nuevaInscripcion = await Usuario_Clase.crear({ IdUsuario_FK, IdClase_FK });
+            const nuevaInscripcion = await Usuario_Clase.crear({ IdUsuario_FK, Codigo_FK });
             res.status(201).json({
                 mensaje: "Inscripción creada correctamente",
                 data: nuevaInscripcion
