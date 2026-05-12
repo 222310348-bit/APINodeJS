@@ -4,7 +4,7 @@ class Asistencia {
     //Obtener todos las asistencias
     static async obtenerTodos() {
         const [rows] = await mysqlPool.query(
-            "SELECT IdAsistencia_PK,Fecha,Hora,Estado,IdClase_FK,IdUsuario_FK FROM Asistencia");
+            "SELECT IdAsistencia_PK,Fecha,Hora,Estado,Codigo_FK,IdUsuario_FK FROM Asistencia");
 
         return rows;
     }
@@ -12,7 +12,7 @@ class Asistencia {
     //Obtener asistencias por ID del alumno
     static async obtenerAsitenciaAlumno(id) {
         const [rows] = await mysqlPool.query(
-            "SELECT IdAsistencia_PK,Fecha,Hora,Estado,IdClase_FK,IdUsuario_FK FROM Asistencia WHERE IdUsuario_FK = ?",[id]);
+            "SELECT IdAsistencia_PK,Fecha,Hora,Estado,Codigo_FK,IdUsuario_FK FROM Asistencia WHERE IdUsuario_FK = ?",[id]);
 
         return rows;
     }
@@ -21,38 +21,38 @@ class Asistencia {
     static async obtenerAsitenciaClase(ids) {
     const placeholders = ids.map(() => '?').join(',');
     const [rows] = await mysqlPool.query(
-        `SELECT IdAsistencia_PK, Fecha, Hora, Estado, IdClase_FK, IdUsuario_FK
+        `SELECT IdAsistencia_PK, Fecha, Hora, Estado, Codigo_FK, IdUsuario_FK
          FROM Asistencia 
-         WHERE IdClase_FK IN (${placeholders})`, ids);
+         WHERE Codigo_FK IN (${placeholders})`, ids);
         
         return rows;
-}
+    }
 
-    static async obtenerAsistenciaAlumnoPorClase(idUsuario, idClase) {
+    static async obtenerAsistenciaAlumnoPorClase(idUsuario, CodigoClase) {
     const [rows] = await mysqlPool.query(
-        `SELECT IdAsistencia_PK, Fecha, Hora, Estado, IdClase_FK, IdUsuario_FK
+        `SELECT IdAsistencia_PK, Fecha, Hora, Estado, Codigo_FK, IdUsuario_FK
          FROM Asistencia 
-         WHERE IdUsuario_FK = ? AND IdClase_FK = ?`,
-        [idUsuario, idClase]);
+         WHERE IdUsuario_FK = ? AND Codigo_FK = ?`,
+        [idUsuario, CodigoClase]);
 
         return rows;
     }
 
     //Ingresar asistencia
     static async IngresarAsistencia(data) {
-        const {Fecha,Hora,Estado,IdClase_FK,IdUsuario_FK} = data;
+        const {Fecha,Hora,Estado,Codigo_FK,IdUsuario_FK} = data;
         const [result] = await mysqlPool.query(
-        "INSERT INTO Asistencia (Fecha,Hora,Estado,IdClase_FK,IdUsuario_FK) VALUES (?, ?, ?, ?, ?)",
-        [Fecha,Hora,Estado,IdClase_FK,IdUsuario_FK]);
-        return { IdAsistencia_PK: result.insertId, Fecha,Hora,Estado,IdClase_FK,IdUsuario_FK };
+        "INSERT INTO Asistencia (Fecha,Hora,Estado,Codigo_FK,IdUsuario_FK) VALUES (?, ?, ?, ?, ?)",
+        [Fecha,Hora,Estado,Codigo_FK,IdUsuario_FK]);
+        return { IdAsistencia_PK: result.insertId, Fecha,Hora,Estado,Codigo_FK,IdUsuario_FK };
     }
 
     //Editar Asistencia
     static async EditarAsistencia(id, data){
-        const {Fecha,Hora,Estado,IdClase_FK,IdUsuario_FK} = data;
+        const {Fecha,Hora,Estado,Codigo_FK,IdUsuario_FK} = data;
         const [result] = await mysqlPool.query(
-            "UPDATE Asistencia SET Fecha = ?,Hora = ?,Estado = ?,IdClase_FK = ?,IdUsuario_FK = ? WHERE IdAsistencia_PK = ?",
-            [Fecha,Hora,Estado,IdClase_FK,IdUsuario_FK,id]
+            "UPDATE Asistencia SET Fecha = ?,Hora = ?,Estado = ?,Codigo_FK = ?,IdUsuario_FK = ? WHERE IdAsistencia_PK = ?",
+            [Fecha,Hora,Estado,Codigo_FK,IdUsuario_FK,id]
         )
         return result.affectedRows > 0;
     }

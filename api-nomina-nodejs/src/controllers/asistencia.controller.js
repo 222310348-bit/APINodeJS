@@ -8,26 +8,26 @@ class AsistenciaController {
     try {
         const idUsuario = req.usuario.id_usuario;
         const rol = Number(req.usuario.rol);
-        const { idClase } = req.query; 
+        const { CodigoClase } = req.query; 
 
         let asistencias;
 
         if (rol === 1) {
-            if (idClase) {
-                asistencias = await Asistencia.obtenerAsitenciaClase([idClase]);
+            if (CodigoClase) {
+                asistencias = await Asistencia.obtenerAsitenciaClase([CodigoClase]);
             } else {
                 return res.status(404).json({
-                    mensaje: "Ingresa el id de la clase que quiere ver las asistencias"
+                    mensaje: "Ingresa el codigo de la clase que quiere ver las asistencias"
                 });
             }
         }
 
         else if (rol === 2) {
-            if (idClase) {
-                asistencias = await Asistencia.obtenerAsistenciaAlumnoPorClase(idUsuario, idClase);
+            if (CodigoClase) {
+                asistencias = await Asistencia.obtenerAsistenciaAlumnoPorClase(idUsuario, CodigoClase);
             } else {
                 return res.status(404).json({
-                    mensaje: "Ingresa el id de la clase que quiere ver las asistencias"
+                    mensaje: "Ingresa el codigo de la clase que quiere ver las asistencias"
                 });
             }
         }
@@ -42,17 +42,17 @@ class AsistenciaController {
             }
             const idsClases = clases.map(c => c.IdClase_FK);
 
-            if (idClase) {
-                if (!idsClases.includes(idClase)) {
+            if (CodigoClase) {
+                if (!idsClases.includes(CodigoClase)) {
                     return res.status(403).json({
                         mensaje: "No tienes acceso a esta clase"
                     });
                 }
-                asistencias = await Asistencia.obtenerAsitenciaClase([idClase]);
+                asistencias = await Asistencia.obtenerAsitenciaClase([CodigoClase]);
             } 
             else {
                 return res.status(404).json({
-                    mensaje: "Ingresa el id de la clase que quiere ver las asistencias"
+                    mensaje: "Ingresa el codigo de la clase que quiere ver las asistencias"
                 });
             }
         }
