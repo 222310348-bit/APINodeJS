@@ -25,17 +25,34 @@ class Clases {
         return rows[0];
     }
 
-    //Obtener clases por usuario
+    // Obtener todas las clases para el Dashboard (con nombre de docente)
+    static async obtenerClasesPorUsuarioTipoAdmin() {
+        const [rows] = await mysqlPool.query(
+            `SELECT c.Codigo_PK, c.NombreC, 
+                (SELECT CONCAT(u.NombresU, ' ', u.ApellidosU) 
+                FROM Usuarios u 
+                JOIN Usuario_Clase uc2 ON u.IdUsuario_PK = uc2.IdUsuario_FK 
+                WHERE uc2.Codigo_FK = c.Codigo_PK 
+                AND u.IdRol_FK = 3) AS NombreCompletoDocente
+            FROM Clases c`
+        );
+        return rows;
+    }
+
     static async obtenerClasesPorUsuario(idUsuario) {
-    const [rows] = await mysqlPool.query(
-        `SELECT c.Codigo_PK, c.NombreC, c.IdClase
-         FROM Clases c
-         JOIN Usuario_Clase uc ON c.Codigo_PK = uc.Codigo_FK
-         WHERE uc.IdUsuario_FK = ?`,
-        [idUsuario]
-    );
-    return rows;
-}
+        const [rows] = await mysqlPool.query(
+            `SELECT c.Codigo_PK, c.NombreC,
+                (SELECT CONCAT(u2.NombresU, ' ', u2.ApellidosU)
+                FROM Usuarios u2
+                JOIN Usuario_Clase uc2 ON u2.IdUsuario_PK = uc2.IdUsuario_FK
+                WHERE uc2.Codigo_FK = c.Codigo_PK 
+                AND u2.IdRol_FK = 3 LIMIT 1) AS NombreCompletoDocente
+            FROM Clases c
+            JOIN Usuario_Clase uc ON c.Codigo_PK = uc.Codigo_FK
+            WHERE uc.IdUsuario_FK = ?`,[idUsuario]
+        );
+        return rows;
+    }
 
     //Crear nueva clase
     static async crear(data) {
@@ -46,6 +63,30 @@ class Clases {
         );
         return { Codigo_PK, NombreC, IdClase }
     }
+
+    static async crearClaseCompleta(nombreC, idClase, idDocente) {
+    // Generar código aleatorio (ejemplo: 4X2Y9Z)
+    const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let codigo = '';
+    for (let i = 0; i < 6; i++) {
+        codigo += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
+    }
+
+    // Usamos la conexión para asegurar que si algo falla, no se cree nada (opcional: transactions)
+    // 1. Crear la clase
+    await mysqlPool.query(
+        "INSERT INTO Clases (Codigo_PK, NombreC, IdClase) VALUES (?, ?, ?)",
+        [codigo, nombreC, idClase]
+    );
+
+    // 2. Vincular automáticamente al creador (Docente/Admin) en la tabla pivote
+    await mysqlPool.query(
+        "INSERT INTO Usuario_Clase (IdUsuario_FK, Codigo_FK) VALUES (?, ?)",
+        [idDocente, codigo]
+    );
+
+    return codigo; // Retornamos el código por si queremos mostrarlo en un mensaje
+}
 
     //Eliminar  clase
     static async eliminar(id) {

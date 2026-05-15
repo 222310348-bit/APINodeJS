@@ -54,6 +54,11 @@ INSERT INTO Asistencia(Fecha,Hora,Estado,Codigo_FK,IdUsuario_FK) Values ('2026-0
 ('2026-03-10','15:10:00','J','78uH6X',2),
 ('2026-03-10','15:10:12','A','78uH6X',3);
 
-INSERT INTO Usuario_Clase(IdUsuario_FK,Codigo_FK) Values (1,'56VF1s'),(2,'78uH6X'),(3,'78uH6X');
+INSERT INTO Usuario_Clase(IdUsuario_FK,Codigo_FK) Values (1,'56VF1s'),(2,'78uH6X'),(3,'78uH6X'),(1,'78uH6X');
 
 select * from roles;
+/*Insert nuevos*/
+INSERT INTO Usuarios(NombresU,ApellidosU,Contraseña,Correo,IdRol_FK) Values 
+('Jose Angel','Candelas Saucedo','1234','JACS14@itslerdo.edu.mx', 3);
+
+INSERT INTO Usuario_Clase(IdUsuario_FK,Codigo_FK) Values (4,'56VF1s'),(4,'78uH6X'),(6,'AS279D');

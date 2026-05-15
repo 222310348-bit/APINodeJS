@@ -37,12 +37,20 @@ class Usuario {
 
     //Actualizar usuario
     static async ActualizarUsuario(id, data) {
-        const { NombresU, ApellidosU, Correo, Contraseña, IdRol_FK } = data;
-        const [result] = await mysqlPool.query(
-            "UPDATE Usuarios SET NombresU = ?, ApellidosU = ?, Correo = ?, Contraseña = ?, IdRol_FK = ? WHERE IdUsuario_PK = ?",
-            [NombresU, ApellidosU, Correo, Contraseña, IdRol_FK, id]
-        );
-        return result.affectedRows > 0;
+        let campos = "NombresU = ?, ApellidosU = ?, Correo = ?, IdRol_FK = ?";
+        let valores = [data.NombresU, data.ApellidosU, data.Correo, data.IdRol_FK];
+
+        // Si el objeto trae Contraseña, la agregamos al SQL
+        if (data.Contraseña) {
+            campos += ", Contraseña = ?";
+            valores.push(data.Contraseña);
+        }
+
+        valores.push(id); // Al final para el WHERE
+
+        const sql = `UPDATE Usuarios SET ${campos} WHERE IdUsuario_PK = ?`;
+        const [result] = await mysqlPool.query(sql, valores);
+        return result;
     }
 
     //Eliminar usuario

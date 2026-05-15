@@ -1,7 +1,7 @@
 const Clases = require('../models/clases.models');
 
 class ClasesController {
-
+    //Obtener todas las clases
     static async obtenerClases(req, res) {
     try {
         const idUsuario = req.usuario.id_usuario;
@@ -23,8 +23,7 @@ class ClasesController {
         });
     }    
 }
-
-
+    //Obtener solo una clase
     static async obtenerClase(req, res) {
     try {
         const { id } = req.params;
@@ -56,21 +55,54 @@ class ClasesController {
     }
 }
 
+    static async obtenerMisClases(req, res) {
+    try {
+        // Extraemos los datos del token
+        const idUsuario = req.usuario.id_usuario;
+        const rol = Number(req.usuario.rol);
+        
+        let clases;
+
+        // Verificamos el rol para decidir qué método del modelo llamar
+        if (rol === 1) {
+            clases = await Clases.obtenerClasesPorUsuarioTipoAdmin();
+        } else {
+            // Si es Docente (2) o Alumno (3)
+            clases = await Clases.obtenerClasesPorUsuario(idUsuario);
+        }
+
+        res.json(clases);
+    } catch (error) {
+        console.error("Error al obtener mis clases:", error);
+        res.status(500).json({
+            mensaje: "Error al obtener la lista de clases",
+            error: error.message
+        });
+    }
+}
+
     static async crearClase(req, res) {
         try {
-            
-            const nuevaClase = await Clases.crear(req.body);
+            const { NombreC, IdClase, IdDocenteSeleccionado } = req.body;
+            const idUsuarioToken = req.usuario.id_usuario;
+            const rolToken = Number(req.usuario.rol);
+
+            // Si es Admin (1), usa el ID que eligió del select. 
+            // Si es Docente (3), usa su propio ID del token.
+            const idProfeFinal = (rolToken === 1) ? IdDocenteSeleccionado : idUsuarioToken;
+
+            if (!idProfeFinal) {
+                return res.status(400).json({ mensaje: "Debes asignar un docente a la clase" });
+            }
+
+            const codigoGenerado = await Clases.crearClaseCompleta(NombreC, IdClase, idProfeFinal);
 
             res.status(201).json({
-                mensaje: "Clase creada correctamente",
-                data: nuevaClase
+                mensaje: "Clase creada exitosamente",
+                codigo: codigoGenerado
             });
-
         } catch (error) {
-            res.status(500).json({
-                mensaje: "Error al crear clase",
-                error: error.message
-            });
+            res.status(500).json({ mensaje: "Error", error: error.message });
         }
     }
 

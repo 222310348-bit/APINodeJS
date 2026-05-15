@@ -8,5 +8,6 @@ router.get('/', verificarToken, verificarRol(1,2,3), ClasesController.obtenerCla
 router.get('/:id', verificarToken, verificarRol(1,2,3), ClasesController.obtenerClase);
 router.post('/', verificarToken, verificarRol(1,3), ClasesController.crearClase);
 router.delete('/:id', verificarToken, verificarRol(1), ClasesController.eliminarClase);
+router.get('/mis-clases', verificarToken,verificarRol(1,2,3), ClasesController.obtenerMisClases);
 
 module.exports = router;
