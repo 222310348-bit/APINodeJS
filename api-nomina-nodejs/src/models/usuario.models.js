@@ -53,13 +53,12 @@ class Usuario {
         return result;
     }
 
-    //Eliminar usuario
-    static async EliminarUsuario(id) {
-        const [result] = await mysqlPool.query(
-            "DELETE FROM Usuarios WHERE IdUsuario_PK = ?",
-            [id]
-        );
-        return result.affectedRows > 0;
+    static async eliminarUsuarioCompleto(id) {
+        await mysqlPool.query("DELETE FROM Usuario_Clase WHERE IdUsuario_FK = ?", [id]);
+
+        const [result] = await mysqlPool.query("DELETE FROM Usuarios WHERE IdUsuario_PK = ?", [id]);
+    
+        return result;
     }
 
     //Inicio de sesion

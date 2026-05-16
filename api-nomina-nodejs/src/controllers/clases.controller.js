@@ -81,23 +81,22 @@ class ClasesController {
     }
 }
 
-    static async crearClase(req, res) {
-        try {
-            const { NombreC, IdClase, IdDocenteSeleccionado } = req.body;
-            const idUsuarioToken = req.usuario.id_usuario;
-            const rolToken = Number(req.usuario.rol);
+static async crearClase(req, res) {
+    try {
+        const { NombreC, IdClase, IdDocenteSeleccionado } = req.body;
+        const idUsuarioToken = req.usuario.id_usuario;
+        const rolToken = Number(req.usuario.rol);
 
-            // Si es Admin (1), usa el ID que eligió del select. 
-            // Si es Docente (3), usa su propio ID del token.
-            const idProfeFinal = (rolToken === 1) ? IdDocenteSeleccionado : idUsuarioToken;
+        // Si es Admin, usa el ID que eligió del select y si es Docente, usa su propio ID del token.
+        const idProfeFinal = IdDocenteSeleccionado || req.usuario.id_usuario;
 
-            if (!idProfeFinal) {
-                return res.status(400).json({ mensaje: "Debes asignar un docente a la clase" });
-            }
+        if (!idProfeFinal) {
+            return res.status(400).json({ mensaje: "Debes asignar un docente a la clase" });
+        }
 
-            const codigoGenerado = await Clases.crearClaseCompleta(NombreC, IdClase, idProfeFinal);
+        const codigoGenerado = await Clases.crearClaseCompleta(NombreC, IdClase, idProfeFinal);
 
-            res.status(201).json({
+        res.status(201).json({
                 mensaje: "Clase creada exitosamente",
                 codigo: codigoGenerado
             });
@@ -106,21 +105,31 @@ class ClasesController {
         }
     }
 
-    static async eliminarClase(req, res) {
+    static async actualizarClaseC(req, res) {
         try {
-            const { id } = req.params;
-            const eliminado = await Clases.eliminar(id);
+            const { codigo } = req.params;
+            const { NombreC, IdClase, IdDocenteSeleccionado } = req.body;
+        
+            // Si no viene docente de la web, usamos el del token para que no falle el SQL
+            const docente = IdDocenteSeleccionado || req.usuario.id_usuario;
 
-            res.status(201).json({ 
-                mensaje: "Clase eliminada correctamente",
-                data: eliminado
-            });
-
+            await Clases.actualizarClaseCompleta(codigo, NombreC, IdClase, docente);
+            res.json({ mensaje: "Actualizado con éxito" });
         } catch (error) {
-            res.status(500).json({
-                mensaje: "Error al eliminar la clase",
-                error: error.message
-            });
+            res.status(500).json({ mensaje: "Error", error: error.message });
+        }
+    }
+
+    static async eliminarClaseC(req, res) {
+        try {
+            const { codigo } = req.params;
+            if (!codigo) throw new Error("Código no proporcionado");
+
+            await Clases.eliminarClaseCompleta(codigo);
+            res.json({ mensaje: "Eliminado con éxito" });
+        } catch (error) {
+            console.error("Error en borrar:", error.message);
+            res.status(500).json({ error: error.message });
         }
     }
 }

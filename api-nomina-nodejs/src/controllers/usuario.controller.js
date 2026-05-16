@@ -72,7 +72,12 @@ class UsuarioController {//Clase que se usa para la ruta.
     static async EliminarUsuarioC(req, res){
         try {
             const { id } = req.params;
-            const eliminado = await Usuario.EliminarUsuario(id);
+            const eliminado = await Usuario.eliminarUsuarioCompleto(id);
+
+            if (Number(id) === req.usuario.id_usuario) {
+                return res.status(400).json({ mensaje: "No puedes eliminar tu propia cuenta" });
+            }
+
             if (eliminado) {
                 res.json({
                     mensaje: "Usuario eliminado exitosamente"

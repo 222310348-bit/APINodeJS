@@ -34,7 +34,9 @@ class Clases {
                 JOIN Usuario_Clase uc2 ON u.IdUsuario_PK = uc2.IdUsuario_FK 
                 WHERE uc2.Codigo_FK = c.Codigo_PK 
                 AND u.IdRol_FK = 3) AS NombreCompletoDocente
-            FROM Clases c`
+            FROM Clases c
+            JOIN Usuario_Clase uc ON c.Codigo_PK = uc.Codigo_FK
+            Group by (c.Codigo_PK);`
         );
         return rows;
     }
@@ -65,36 +67,52 @@ class Clases {
     }
 
     static async crearClaseCompleta(nombreC, idClase, idDocente) {
-    // Generar código aleatorio (ejemplo: 4X2Y9Z)
-    const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let codigo = '';
-    for (let i = 0; i < 6; i++) {
-        codigo += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
+        // Generar código aleatorio (ejemplo: 4X2Y9Z)
+        const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let codigo = '';
+        for (let i = 0; i < 6; i++) {
+            codigo += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
+        }   
+
+        // Usamos la conexión para asegurar que si algo falla, no se cree nada (opcional: transactions)
+        // 1. Crear la clase
+        await mysqlPool.query(
+            "INSERT INTO Clases (Codigo_PK, NombreC, IdClase) VALUES (?, ?, ?)",
+            [codigo, nombreC, idClase]
+        );
+
+        // 2. Vincular automáticamente al creador (Docente/Admin) en la tabla pivote
+        await mysqlPool.query(
+            "INSERT INTO Usuario_Clase (IdUsuario_FK, Codigo_FK) VALUES (?, ?)",
+            [idDocente, codigo]
+        );
+
+        return codigo; // Retornamos el código por si queremos mostrarlo en un mensaje
     }
 
-    // Usamos la conexión para asegurar que si algo falla, no se cree nada (opcional: transactions)
-    // 1. Crear la clase
-    await mysqlPool.query(
-        "INSERT INTO Clases (Codigo_PK, NombreC, IdClase) VALUES (?, ?, ?)",
-        [codigo, nombreC, idClase]
-    );
-
-    // 2. Vincular automáticamente al creador (Docente/Admin) en la tabla pivote
-    await mysqlPool.query(
-        "INSERT INTO Usuario_Clase (IdUsuario_FK, Codigo_FK) VALUES (?, ?)",
-        [idDocente, codigo]
-    );
-
-    return codigo; // Retornamos el código por si queremos mostrarlo en un mensaje
-}
-
-    //Eliminar  clase
-    static async eliminar(id) {
-        const [result] = await mysqlPool.query(
-            "DELETE FROM Clases WHERE Codigo_PK = ?",
-            [id]
+    static async actualizarClaseCompleta(codigo, nombreC, idClase, idDocente) {
+        await mysqlPool.query(
+            "UPDATE Clases SET NombreC = ?, IdClase = ? WHERE Codigo_PK = ?",
+            [nombreC, idClase, codigo]
         );
-        return result.affectedRows > 0;
+
+        // 2. Borra el docente anterior y pon el nuevo (Evita errores de duplicados)
+        await mysqlPool.query("DELETE FROM Usuario_Clase WHERE Codigo_FK = ?", [codigo]);
+        await mysqlPool.query(
+            "INSERT INTO Usuario_Clase (IdUsuario_FK, Codigo_FK) VALUES (?, ?)",
+            [idDocente, codigo]
+        );
+    }
+
+    static async eliminarClaseCompleta(codigo) {
+        // IMPORTANTE: El orden de eliminación es vital
+        // Primero la tabla "hija" (la que tiene las llaves foráneas)
+        await mysqlPool.query("DELETE FROM Usuario_Clase WHERE Codigo_FK = ?", [codigo]);
+    
+        // Luego la tabla "padre" (donde está el código original)
+        const [result] = await mysqlPool.query("DELETE FROM Clases WHERE Codigo_PK = ?", [codigo]);
+    
+        return result;
     }   
 }
 
