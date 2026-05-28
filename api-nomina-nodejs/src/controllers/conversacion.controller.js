@@ -1,4 +1,5 @@
 const Conversacion = require('../models/conversacion.models');
+const Usuario_Clase = require('../models/usuario_clase.models');
 
 const crearConversacion = async (req, res) => {
     try {
@@ -224,10 +225,32 @@ const obtenerMisConversaciones = async (req, res) => {
     }
 };
 
+const obtenerConversacionesPorClase = async (req, res) => {
+    try {
+        const { codigo } = req.params;
+        const idUsuario = req.usuario.id_usuario;
+
+        const estaInscrito = await Usuario_Clase.existeInscripcion(idUsuario, codigo);
+        if (!estaInscrito) {
+            return res.status(403).json({ mensaje: 'No tienes acceso a las conversaciones de esta clase' });
+        }
+
+        const conversaciones = await Conversacion.find({ claseId: codigo, activa: true });
+        res.json(conversaciones);
+    } catch (error) {
+        console.error('Error al obtener conversaciones por clase:', error);
+        res.status(500).json({
+            mensaje: 'Error al obtener conversaciones',
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     crearConversacion,
     agregarParticipante,
     agregarAdministrador,
     desactivarConversacion,
-    obtenerMisConversaciones
+    obtenerMisConversaciones,
+    obtenerConversacionesPorClase
 };
