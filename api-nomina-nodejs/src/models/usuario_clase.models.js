@@ -69,6 +69,15 @@ class Usuario_Clase {
         return result.affectedRows > 0;
     }
 
+    // Eliminar alumno de clase por usuario y código de clase
+    static async desasignarAlumnoClase(IdUsuario_FK, codigoClase) {
+        const [result] = await mysqlPool.query(
+            "DELETE FROM Usuario_Clase WHERE IdUsuario_FK = ? AND Codigo_FK = ?",
+            [IdUsuario_FK, codigoClase]
+        );
+        return result.affectedRows > 0;
+    }
+
 
 
 
@@ -105,7 +114,9 @@ class Usuario_Clase {
     // Obtener alumnos inscritos en una clase
     static async obtenerAlumnosClase(codigoClase) {
         const [rows] = await mysqlPool.query(
-            `SELECT u.IdUsuario_PK AS IdUsuario_FK, u.NombresU, u.ApellidosU, u.Correo
+            `SELECT u.IdUsuario_PK AS IdAlumno,
+                    CONCAT(u.ApellidosU, ' ', u.NombresU) AS NombreCompleto,
+                    u.Correo
              FROM Usuario_Clase uc
              JOIN Usuarios u ON uc.IdUsuario_FK = u.IdUsuario_PK
              WHERE uc.Codigo_FK = ? AND u.IdRol_FK = 2`,

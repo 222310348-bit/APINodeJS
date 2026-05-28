@@ -12,6 +12,8 @@ router.get('/:codigo/conversaciones', verificarToken, verificarRol(1,2,3), conve
 router.get('/:codigo/mis-asistencias', verificarToken, verificarRol(2), ClasesController.obtenerMisAsistenciasClase);
 router.get('/:codigo/asistencias-alumnos', verificarToken, verificarRol(3), ClasesController.obtenerAsistenciasAlumnosClase);
 router.get('/:codigo/alumnos', verificarToken, verificarRol(3), ClasesController.obtenerAlumnosClase);
+router.post('/:codigo/alumnos', verificarToken, verificarRol(3), ClasesController.agregarAlumnosClase);
+router.delete('/:codigo/alumnos/:idAlumno', verificarToken, verificarRol(3), ClasesController.desasignarAlumnoClase);
 router.get('/:id', verificarToken, verificarRol(1,2,3), ClasesController.obtenerClase);
 router.post('/', verificarToken, verificarRol(1,3), ClasesController.crearClase);
 router.put('/:codigo', verificarToken, verificarRol(1,3), ClasesController.actualizarClaseC);

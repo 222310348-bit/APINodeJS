@@ -1,4 +1,5 @@
 const Clases = require('../models/clases.models');
+const Usuario = require('../models/usuario.models');
 const Usuario_Clase = require('../models/usuario_clase.models');
 const Asistencia = require('../models/asistencia.models');
 
@@ -172,6 +173,92 @@ class ClasesController {
         } catch (error) {
             console.error('Error al obtener alumnos de la clase:', error);
             res.status(500).json({ mensaje: 'Error al obtener alumnos', error: error.message });
+        }
+    }
+
+    static async agregarAlumnosClase(req, res) {
+        try {
+            const { codigo } = req.params;
+            const idUsuario = req.usuario.id_usuario;
+            const { emails } = req.body;
+
+            const estaInscrito = await Usuario_Clase.existeInscripcion(idUsuario, codigo);
+            if (!estaInscrito) {
+                return res.status(403).json({ mensaje: 'No tienes acceso a esta clase' });
+            }
+
+            if (!Array.isArray(emails) || !emails.length) {
+                return res.status(400).json({ mensaje: 'Debes enviar una lista de correos válida.' });
+            }
+
+            const correosUnicos = [...new Set(emails.map((email) => String(email).trim().toLowerCase()).filter(Boolean))];
+            const usuarios = await Promise.all(correosUnicos.map((correo) => Usuario.obtenerPorCorreo(correo)));
+
+            const invalidos = [];
+            const noAlumnos = [];
+            const yaInscritos = [];
+            const agregados = [];
+
+            for (let i = 0; i < correosUnicos.length; i++) {
+                const correo = correosUnicos[i];
+                const usuario = usuarios[i];
+
+                if (!usuario) {
+                    invalidos.push(correo);
+                    continue;
+                }
+
+                if (Number(usuario.IdRol_FK) !== 2) {
+                    noAlumnos.push(correo);
+                    continue;
+                }
+
+                const inscrito = await Usuario_Clase.existeInscripcion(usuario.IdUsuario_PK, codigo);
+                if (inscrito) {
+                    yaInscritos.push(correo);
+                    continue;
+                }
+
+                await Usuario_Clase.crear({ IdUsuario_FK: usuario.IdUsuario_PK, Codigo_FK: codigo });
+                agregados.push(correo);
+            }
+
+            if (invalidos.length > 0 || noAlumnos.length > 0) {
+                return res.status(400).json({
+                    mensaje: 'Algunos correos no pudieron agregarse.',
+                    invalidos,
+                    noAlumnos,
+                    yaInscritos,
+                    agregados
+                });
+            }
+
+            res.json({ mensaje: 'Alumnos agregados correctamente', agregados, yaInscritos });
+        } catch (error) {
+            console.error('Error al agregar alumnos a la clase:', error);
+            res.status(500).json({ mensaje: 'Error al agregar alumnos a la clase', error: error.message });
+        }
+    }
+
+    static async desasignarAlumnoClase(req, res) {
+        try {
+            const { codigo, idAlumno } = req.params;
+            const idUsuario = req.usuario.id_usuario;
+
+            const estaInscrito = await Usuario_Clase.existeInscripcion(idUsuario, codigo);
+            if (!estaInscrito) {
+                return res.status(403).json({ mensaje: 'No tienes acceso a esta clase' });
+            }
+
+            const eliminado = await Usuario_Clase.desasignarAlumnoClase(idAlumno, codigo);
+            if (!eliminado) {
+                return res.status(404).json({ mensaje: 'Alumno no encontrado en esta clase' });
+            }
+
+            res.json({ mensaje: 'Alumno desasignado correctamente' });
+        } catch (error) {
+            console.error('Error al desasignar alumno de la clase:', error);
+            res.status(500).json({ mensaje: 'Error al desasignar alumno de la clase', error: error.message });
         }
     }
 
