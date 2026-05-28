@@ -26,9 +26,7 @@ class AsistenciaController {
             if (CodigoClase) {
                 asistencias = await Asistencia.obtenerAsistenciaAlumnoPorClase(idUsuario, CodigoClase);
             } else {
-                return res.status(404).json({
-                    mensaje: "Ingresa el codigo de la clase que quiere ver las asistencias"
-                });
+                asistencias = await Asistencia.obtenerAsitenciaAlumno(idUsuario);
             }
         }
 
