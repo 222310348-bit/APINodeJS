@@ -1,5 +1,6 @@
 const Conversacion = require('../models/conversacion.models');
 const Usuario_Clase = require('../models/usuario_clase.models');
+const Usuario = require('../models/usuario.models');
 
 const crearConversacion = async (req, res) => {
     try {
@@ -10,18 +11,30 @@ const crearConversacion = async (req, res) => {
             claseId, 
             esDirect, 
             participanteId,
+            participanteCorreo,
             participantes: participantesBody
         } = req.body;
 
         //  VALIDACIONES
         if (esDirect) {
-            if (!participanteId) {
+            let participanteFinal = participanteId;
+            if (!participanteFinal && participanteCorreo) {
+                const usuarioEncontrado = await Usuario.obtenerPorCorreo(participanteCorreo);
+                if (!usuarioEncontrado) {
+                    return res.status(404).json({
+                        mensaje: 'No existe un usuario con ese correo'
+                    });
+                }
+                participanteFinal = usuarioEncontrado.IdUsuario_PK;
+            }
+
+            if (!participanteFinal) {
                 return res.status(400).json({
-                    mensaje: 'Debes enviar el id del otro participante'
+                    mensaje: 'Debes enviar el id o el correo del otro participante'
                 });
             }
 
-            if (participanteId === usuario.id_usuario) {
+            if (participanteFinal === usuario.id_usuario) {
                 return res.status(400).json({
                     mensaje: 'No puedes crear una conversación contigo mismo'
                 });
@@ -31,7 +44,7 @@ const crearConversacion = async (req, res) => {
             const existente = await Conversacion.findOne({
                 esDirect: true,
                 participantes: {
-                    $all: [usuario.id_usuario, participanteId]
+                    $all: [usuario.id_usuario, participanteFinal]
                 }
             });
 
@@ -40,6 +53,8 @@ const crearConversacion = async (req, res) => {
                     mensaje: 'Ya existe una conversación entre estos usuarios'
                 });
             }
+
+            req.body.participanteId = participanteFinal;
         }
 
         if (usuario.rol === 2 && !esDirect) {
@@ -59,8 +74,9 @@ const crearConversacion = async (req, res) => {
 
         if (esDirect) {
             participantes = [
-            usuario.id_usuario,
-            participanteId];
+                usuario.id_usuario,
+                participanteFinal
+            ];
         } 
         else {
             if (!Array.isArray(participantesBody) || participantesBody.length === 0) {
@@ -213,8 +229,27 @@ const obtenerMisConversaciones = async (req, res) => {
             activa: true
         });
 
+        const conversacionesEnriquecidas = await Promise.all(conversaciones.map(async (conv) => {
+            if (conv.esDirect && Array.isArray(conv.participantes)) {
+                const otroId = conv.participantes.find((participante) => participante !== Number(idUsuario));
+                if (otroId) {
+                    const otroUsuario = await Usuario.obtenerPorId(otroId);
+                    return {
+                        ...conv.toObject(),
+                        otroParticipante: otroUsuario ? {
+                            id: otroUsuario.IdUsuario_PK,
+                            nombres: otroUsuario.NombresU,
+                            apellidos: otroUsuario.ApellidosU,
+                            correo: otroUsuario.Correo
+                        } : null
+                    };
+                }
+            }
+            return conv;
+        }));
+
         res.json({
-            data: conversaciones
+            data: conversacionesEnriquecidas
         });
 
     } catch (error) {
@@ -222,6 +257,41 @@ const obtenerMisConversaciones = async (req, res) => {
             mensaje: 'Error al obtener conversaciones',
             error: error.message
         });
+    }
+};
+
+const obtenerConversacionPorId = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const idUsuario = req.usuario.id_usuario;
+
+        const conversacion = await Conversacion.findById(id);
+        if (!conversacion || !conversacion.activa) {
+            return res.status(404).json({ mensaje: 'Conversación no encontrada' });
+        }
+
+        if (!conversacion.participantes.includes(Number(idUsuario))) {
+            return res.status(403).json({ mensaje: 'No perteneces a esta conversación' });
+        }
+
+        let enriched = conversacion.toObject();
+        if (enriched.esDirect && Array.isArray(enriched.participantes)) {
+            const otroId = enriched.participantes.find((participante) => participante !== Number(idUsuario));
+            if (otroId) {
+                const otroUsuario = await Usuario.obtenerPorId(otroId);
+                enriched.otroParticipante = otroUsuario ? {
+                    id: otroUsuario.IdUsuario_PK,
+                    nombres: otroUsuario.NombresU,
+                    apellidos: otroUsuario.ApellidosU,
+                    correo: otroUsuario.Correo
+                } : null;
+            }
+        }
+
+        res.json({ data: enriched });
+    } catch (error) {
+        console.error('Error al obtener conversación por id:', error);
+        res.status(500).json({ mensaje: 'Error al obtener conversación', error: error.message });
     }
 };
 
@@ -252,5 +322,6 @@ module.exports = {
     agregarAdministrador,
     desactivarConversacion,
     obtenerMisConversaciones,
+    obtenerConversacionPorId,
     obtenerConversacionesPorClase
 };

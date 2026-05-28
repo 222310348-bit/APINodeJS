@@ -176,9 +176,35 @@ const reportarMensaje = async (req, res) => {
 };
 
 
+// OBTENER MENSAJES POR CONVERSACIÓN
+const obtenerMensajesPorConversacion = async (req, res) => {
+    try {
+        const { id } = req.params; // id de la conversación (ObjectId)
+        const usuario = req.usuario;
+
+        // Verificar que la conversación exista y que el usuario sea participante
+        const conversaciones = require('../models/conversacion.models');
+        const conversacion = await conversaciones.findById(id);
+        if (!conversacion || !conversacion.activa) {
+            return res.status(404).json({ mensaje: 'Conversación no encontrada' });
+        }
+
+        if (!conversacion.participantes.includes(Number(usuario.id_usuario))) {
+            return res.status(403).json({ mensaje: 'No perteneces a esta conversación' });
+        }
+
+        const mensajes = await Mensaje.find({ conversacionId: id, visible: true }).sort({ fechaCreacion: 1 });
+        res.json({ data: mensajes });
+    } catch (error) {
+        console.error('Error al obtener mensajes por conversación:', error);
+        res.status(500).json({ mensaje: 'Error al obtener mensajes', error: error.message });
+    }
+};
+
 module.exports = {
     enviarMensaje,
     editarMensaje,
     eliminarMensaje,
-    reportarMensaje
+    reportarMensaje,
+    obtenerMensajesPorConversacion
 };

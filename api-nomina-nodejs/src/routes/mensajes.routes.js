@@ -8,6 +8,9 @@ const AuthController = require('../controllers/auth.controller');
 // URL final: POST http://localhost:4000/api/mensajes
 router.post('/', verificarToken, verificarRol(1,2,3), mensajeController.enviarMensaje);
 
+// Obtener mensajes de una conversacion
+router.get('/conversacion/:id', verificarToken, verificarRol(1,2,3), mensajeController.obtenerMensajesPorConversacion);
+
 // NUEVAS RUTAS
 // Editar mensaje (PUT porque modificamos todo el cuerpo del mensaje y el historial)
 router.put('/:id/editar', verificarToken, verificarRol(1,2,3), mensajeController.editarMensaje);
