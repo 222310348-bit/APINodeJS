@@ -157,6 +157,24 @@ class ClasesController {
         }
     }
 
+    static async obtenerAlumnosClase(req, res) {
+        try {
+            const { codigo } = req.params;
+            const idUsuario = req.usuario.id_usuario;
+
+            const estaInscrito = await Usuario_Clase.existeInscripcion(idUsuario, codigo);
+            if (!estaInscrito) {
+                return res.status(403).json({ mensaje: 'No tienes acceso a esta clase' });
+            }
+
+            const alumnos = await Usuario_Clase.obtenerAlumnosClase(codigo);
+            res.json({ data: alumnos });
+        } catch (error) {
+            console.error('Error al obtener alumnos de la clase:', error);
+            res.status(500).json({ mensaje: 'Error al obtener alumnos', error: error.message });
+        }
+    }
+
     static async actualizarClaseC(req, res) {
         try {
             const { codigo } = req.params;

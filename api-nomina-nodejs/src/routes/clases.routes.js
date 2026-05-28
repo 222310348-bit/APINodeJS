@@ -11,6 +11,7 @@ router.post('/unirse/:codigo', verificarToken, verificarRol(2), ClasesController
 router.get('/:codigo/conversaciones', verificarToken, verificarRol(1,2,3), conversacionController.obtenerConversacionesPorClase);
 router.get('/:codigo/mis-asistencias', verificarToken, verificarRol(2), ClasesController.obtenerMisAsistenciasClase);
 router.get('/:codigo/asistencias-alumnos', verificarToken, verificarRol(3), ClasesController.obtenerAsistenciasAlumnosClase);
+router.get('/:codigo/alumnos', verificarToken, verificarRol(3), ClasesController.obtenerAlumnosClase);
 router.get('/:id', verificarToken, verificarRol(1,2,3), ClasesController.obtenerClase);
 router.post('/', verificarToken, verificarRol(1,3), ClasesController.crearClase);
 router.put('/:codigo', verificarToken, verificarRol(1,3), ClasesController.actualizarClaseC);

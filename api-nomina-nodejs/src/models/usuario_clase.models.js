@@ -101,6 +101,18 @@ class Usuario_Clase {
         );
         return rows.map(row => row.IdUsuario_PK);
     }
+
+    // Obtener alumnos inscritos en una clase
+    static async obtenerAlumnosClase(codigoClase) {
+        const [rows] = await mysqlPool.query(
+            `SELECT u.IdUsuario_PK AS IdUsuario_FK, u.NombresU, u.ApellidosU, u.Correo
+             FROM Usuario_Clase uc
+             JOIN Usuarios u ON uc.IdUsuario_FK = u.IdUsuario_PK
+             WHERE uc.Codigo_FK = ? AND u.IdRol_FK = 2`,
+            [codigoClase]
+        );
+        return rows;
+    }
 }
 
 module.exports = Usuario_Clase;
