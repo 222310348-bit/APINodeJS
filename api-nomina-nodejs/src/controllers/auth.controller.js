@@ -93,28 +93,80 @@ class AuthController{
     }
 
     static async RestablecerPasswordPorCorreo(req, res) {
-    try {
-        const { correo, nuevaPassword } = req.body;
-        const usuario = await Usuario.obtenerPorCorreo(correo);
+        try {
+            const { correo, nuevaPassword } = req.body;
+            const usuario = await Usuario.obtenerPorCorreo(correo);
 
-        if (!usuario) {
-            return res.status(404).json({ mensaje: "Usuario no encontrado" });
-        }
+            if (!usuario) {
+                return res.status(404).json({ mensaje: "Usuario no encontrado" });
+            }
 
-        // Encriptamos la nueva contraseña antes de guardarla
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(nuevaPassword, salt);
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(nuevaPassword, salt);
 
-        // Llamamos a tu método de modelo que SOLO actualiza la clave
-        const resultado = await Usuario.ActualizarContraseña(correo, hashedPassword);
+            const resultado = await Usuario.ActualizarContraseña(correo, hashedPassword);
 
-        if (resultado.affectedRows > 0) {
-            return res.json({ mensaje: "Contraseña actualizada con éxito" });
-        }
-        
-        res.status(500).json({ mensaje: "No se pudo actualizar" });
+            if (resultado.affectedRows > 0) {
+                return res.json({ mensaje: "Contraseña actualizada con éxito" });
+            }
+
+            res.status(500).json({ mensaje: "No se pudo actualizar" });
         } catch (error) {
             res.status(500).json({ mensaje: "Error", error: error.message });
+        }
+    }
+
+    static async cambiarPassword(req, res) {
+        try {
+            const { contrasenaActual, nuevaContrasena } = req.body;
+            const idUsuario = req.usuario.id_usuario;
+
+            if (!contrasenaActual || !nuevaContrasena) {
+                return res.status(400).json({ mensaje: 'La contraseña actual y la nueva son obligatorias.' });
+            }
+
+            const usuario = await Usuario.obtenerPorId(idUsuario);
+            if (!usuario) {
+                return res.status(404).json({ mensaje: 'Usuario no encontrado.' });
+            }
+
+            const passEnBD = usuario.Contraseña || usuario.contrasena || '';
+            const coincide = passEnBD.startsWith('$2')
+                ? await bcrypt.compare(contrasenaActual, passEnBD)
+                : contrasenaActual === passEnBD;
+
+            if (!coincide) {
+                return res.status(401).json({ mensaje: 'La contraseña actual es incorrecta.' });
+            }
+
+            if (nuevaContrasena.length < 12) {
+                return res.status(400).json({ mensaje: 'La nueva contraseña debe tener al menos 12 caracteres.' });
+            }
+
+            const tieneMayuscula = /[A-Z]/.test(nuevaContrasena);
+            const tieneMinuscula = /[a-z]/.test(nuevaContrasena);
+            const tieneNumero = /[0-9]/.test(nuevaContrasena);
+            const tieneEspecial = /[^A-Za-z0-9]/.test(nuevaContrasena);
+            const tieneEspacio = /\s/.test(nuevaContrasena);
+
+            if (!tieneMayuscula || !tieneMinuscula || !tieneNumero || !tieneEspecial || tieneEspacio) {
+                return res.status(400).json({
+                    mensaje: 'La nueva contraseña debe incluir mayúsculas, minúsculas, números y caracteres especiales, sin espacios.'
+                });
+            }
+
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(nuevaContrasena, salt);
+            const resultado = await Usuario.ActualizarContraseña(usuario.Correo, hashedPassword);
+
+            if (resultado.affectedRows > 0) {
+                return res.json({ mensaje: 'Contraseña actualizada correctamente.' });
+            }
+
+            return res.status(500).json({ mensaje: 'No se pudo actualizar la contraseña.' });
+        } catch (error) {
+            console.error('Error al cambiar contraseña:', error);
+            return res.status(500).json({ mensaje: 'Error al cambiar la contraseña.', error: error.message });
         }
     }
 }
