@@ -1,4 +1,5 @@
 const { mysqlPool } = require('../config/mysql');
+const Conversacion = require('./conversacion.models');
 
 class Usuario_Clase {
     // Obtener todas las inscripciones
@@ -57,6 +58,22 @@ class Usuario_Clase {
             "INSERT INTO Usuario_Clase (IdUsuario_FK, Codigo_FK) VALUES (?, ?)",
             [IdUsuario_FK, Codigo_FK]
         );
+        // Intentar agregar al participante en la conversación grupal de la clase (si existe)
+        (async () => {
+            try {
+                const conversacion = await Conversacion.findOne({ claseId: Codigo_FK, activa: true });
+                if (conversacion) {
+                    const idNum = Number(IdUsuario_FK);
+                    if (!conversacion.participantes.includes(idNum)) {
+                        conversacion.participantes.push(idNum);
+                        await conversacion.save();
+                    }
+                }
+            } catch (err) {
+                console.error('Error al sincronizar participante a conversación:', err.message);
+            }
+        })();
+
         return { IdUsCla: result.insertId, IdUsuario_FK, Codigo_FK };
     }
 
@@ -75,6 +92,24 @@ class Usuario_Clase {
             "DELETE FROM Usuario_Clase WHERE IdUsuario_FK = ? AND Codigo_FK = ?",
             [IdUsuario_FK, codigoClase]
         );
+        // Si se eliminó, también quitar de la conversación grupal
+        (async () => {
+            try {
+                if (result.affectedRows > 0) {
+                    const conversacion = await Conversacion.findOne({ claseId: codigoClase, activa: true });
+                    if (conversacion) {
+                        const idNum = Number(IdUsuario_FK);
+                        conversacion.participantes = conversacion.participantes.filter(p => p !== idNum);
+                        // También remover de administradores.designados si estaba allí
+                        conversacion.administradores.designados = (conversacion.administradores.designados || []).filter(p => p !== idNum);
+                        await conversacion.save();
+                    }
+                }
+            } catch (err) {
+                console.error('Error al sincronizar remoción de participante en conversación:', err.message);
+            }
+        })();
+
         return result.affectedRows > 0;
     }
 

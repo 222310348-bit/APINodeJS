@@ -2,6 +2,7 @@ const Clases = require('../models/clases.models');
 const Usuario = require('../models/usuario.models');
 const Usuario_Clase = require('../models/usuario_clase.models');
 const Asistencia = require('../models/asistencia.models');
+const Conversacion = require('../models/conversacion.models');
 
 class ClasesController {
     static async obtenerClases(req, res) {
@@ -87,6 +88,22 @@ class ClasesController {
             }
 
             const codigoGenerado = await Clases.crearClaseCompleta(NombreC, IdClase, idProfeFinal);
+            // Crear conversación grupal asociada a la clase
+            try {
+                const nuevaConv = new Conversacion({
+                    nombreConversacion: `Clase: ${NombreC}`,
+                    claseId: codigoGenerado,
+                    esDirect: false,
+                    participantes: [idProfeFinal],
+                    administradores: { principal: idProfeFinal, designados: [] }
+                });
+
+                await nuevaConv.save();
+            } catch (convErr) {
+                console.error('Error creando conversación de clase automáticamente:', convErr);
+                // No abortamos la creación de la clase por este error, pero lo registramos.
+            }
+
             res.status(201).json({
                 mensaje: 'Clase creada exitosamente',
                 codigo: codigoGenerado
@@ -309,6 +326,18 @@ class ClasesController {
             }
 
             const result = await Clases.eliminarClaseCompleta(codigo);
+
+            // Intentar eliminar la conversación asociada en MongoDB
+            try {
+                const convEliminada = await Conversacion.findOneAndDelete({ claseId: codigo });
+                if (convEliminada) {
+                    console.log('Conversación vinculada a la clase eliminada:', convEliminada._id);
+                }
+            } catch (convErr) {
+                console.error('Error al eliminar conversación vinculada a la clase:', convErr.message);
+                // No fallamos la operación principal por esto
+            }
+
             res.json({ mensaje: 'Clase eliminada correctamente', affectedRows: result.affectedRows || 0 });
         } catch (error) {
             console.error('Error al eliminar clase:', error);
