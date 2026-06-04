@@ -1,0 +1,13 @@
+PORT=3000
+
+MYSQL_HOST=educatio.mysql.database.azure.com
+MYSQL_PORT=3306
+MYSQL_USER=educatio
+MYSQL_PASSWORD=P4$$w0rd1234
+MYSQL_DATABASE=educatio
+
+# PROBANDO SHARD 01: Cambiamos a shard-00-01 manteniendo la conexión directa obligatoria
+MONGODB_URI=mongodb://222310645_db_user:Sb7JDfDeboNSKIT4@ac-5zjqlac-shard-00-02.lzvcfbb.mongodb.net:27017/educatio?ssl=true&authSource=admin&directConnection=true
+
+JWT_SECRET=NombredelaClaveSecreta
+JWT_EXPIRES_IN=1h

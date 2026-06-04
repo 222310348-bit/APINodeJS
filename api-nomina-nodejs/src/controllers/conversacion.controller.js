@@ -297,15 +297,25 @@ const obtenerConversacionPorId = async (req, res) => {
 
 const obtenerConversacionesPorClase = async (req, res) => {
     try {
-        const { codigo } = req.params;
+        const { codigo } = req.params; // "78uH6X"
         const idUsuario = req.usuario.id_usuario;
 
+        // 1. Mantenemos tu validación original en MySQL (Lo que NotebookLM borró sin querer)
         const estaInscrito = await Usuario_Clase.existeInscripcion(idUsuario, codigo);
         if (!estaInscrito) {
             return res.status(403).json({ mensaje: 'No tienes acceso a las conversaciones de esta clase' });
         }
 
+        // 2. Agregamos los logs de depuración para ver qué pasa en la consola del Backend
+        console.log("--- Depuración de Búsqueda por Clase ---");
+        console.log("Código de clase solicitado (URL):", codigo);
+        console.log("Buscando en MongoDB un documento con claseId igual a:", codigo);
+
+        // 3. Tu consulta limpia a MongoDB
         const conversaciones = await Conversacion.find({ claseId: codigo, activa: true });
+        
+        console.log("Resultado real devuelto por MongoDB:", conversaciones);
+
         res.json(conversaciones);
     } catch (error) {
         console.error('Error al obtener conversaciones por clase:', error);
