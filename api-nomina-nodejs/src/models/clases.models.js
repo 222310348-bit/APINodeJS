@@ -43,7 +43,7 @@ class Clases {
 
     static async obtenerClasesPorUsuario(idUsuario) {
         const [rows] = await mysqlPool.query(
-            `SELECT c.Codigo_PK, c.NombreC,
+            `SELECT c.Codigo_PK, c.NombreC, c.IdClase,
                 (SELECT CONCAT(u2.NombresU, ' ', u2.ApellidosU)
                 FROM Usuarios u2
                 JOIN Usuario_Clase uc2 ON u2.IdUsuario_PK = uc2.IdUsuario_FK

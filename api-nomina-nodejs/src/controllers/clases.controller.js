@@ -11,7 +11,7 @@ class ClasesController {
             const rol = Number(req.usuario.rol);
 
             let clases;
-            if (rol === 1) {
+            if (rol === 1 ) {
                 clases = await Clases.obtenerTodos();
             } else {
                 clases = await Clases.obtenerClasesPorUsuario(idUsuario);
