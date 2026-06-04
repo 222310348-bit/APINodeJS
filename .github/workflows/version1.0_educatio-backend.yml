@@ -52,5 +52,5 @@ jobs:
         with:
           app-name: 'educatio-backend'
           slot-name: 'Production'
-          package: .
+          package: ./api-nomina-nodejs
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_3D8311B0418F402AB3FFCAA7D3407652 }}
