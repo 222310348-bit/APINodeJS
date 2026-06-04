@@ -31,7 +31,15 @@ class UsuarioController {//Clase que se usa para la ruta.
 
     static async crearUsuarioC(req, res){
         try {
-            const nuevoUsuario = await Usuario.crearUsuario(req.body)
+            const { NombresU, ApellidosU, Correo, Contraseña, IdRol_FK } = req.body;
+
+            if (!NombresU || !ApellidosU || !Correo || !Contraseña || !IdRol_FK) {
+                return res.status(400).json({
+                    mensaje: "Todos los campos son requeridos"
+                });
+            }
+
+            const nuevoUsuario = await Usuario.crearUsuario({ NombresU, ApellidosU, Correo, Contraseña, IdRol_FK });
 
             res.status(201).json({
                 mensaje: "Usuario creado exitosamente",
@@ -39,6 +47,10 @@ class UsuarioController {//Clase que se usa para la ruta.
             });
         }
         catch(error){
+            console.error('Error creando usuario:', error);
+            if (error.code === 'ER_DUP_ENTRY') {
+                return res.status(409).json({ mensaje: 'El correo ya está registrado' });
+            }
             res.status(500).json({
                 mensaje: "Error al crear el usuario",
                 error: error.message

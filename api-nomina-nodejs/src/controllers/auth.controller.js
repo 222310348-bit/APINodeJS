@@ -73,7 +73,7 @@ class AuthController{
 
     static async perfil(req,res){
         try{
-            const usuario = await Usuario.findById(req.usuario.id_usuario).select('-password_hash');
+            const usuario = await Usuario.obtenerPorId(req.usuario.id_usuario);
 
             if(!usuario){
                 return res.status(404).json({

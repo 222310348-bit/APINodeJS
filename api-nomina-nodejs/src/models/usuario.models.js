@@ -27,7 +27,13 @@ class Usuario {
 
     //Crear nuevo usuario
     static async crearUsuario(data) {
-        const { NombresU, ApellidosU, Correo, Contraseña, IdRol_FK } = data;
+        const { NombresU, ApellidosU, Correo, Contraseña } = data;
+        const IdRol_FK = Number(data.IdRol_FK);
+
+        if (!Number.isInteger(IdRol_FK) || IdRol_FK <= 0) {
+            throw new Error('IdRol_FK inválido');
+        }
+
         const [result] = await mysqlPool.query(
             "INSERT INTO Usuarios (NombresU, ApellidosU, Correo, Contraseña, IdRol_FK) VALUES (?, ?, ?, ?, ?)",
             [NombresU, ApellidosU, Correo, Contraseña, IdRol_FK]
@@ -37,8 +43,9 @@ class Usuario {
 
     //Actualizar usuario
     static async ActualizarUsuario(id, data) {
+        const IdRol_FK = Number(data.IdRol_FK);
         let campos = "NombresU = ?, ApellidosU = ?, Correo = ?, IdRol_FK = ?";
-        let valores = [data.NombresU, data.ApellidosU, data.Correo, data.IdRol_FK];
+        let valores = [data.NombresU, data.ApellidosU, data.Correo, IdRol_FK];
 
         // Si el objeto trae Contraseña, la agregamos al SQL
         if (data.Contraseña) {
