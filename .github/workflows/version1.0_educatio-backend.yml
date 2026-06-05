@@ -19,7 +19,7 @@ jobs:
       - name: Set up Node.js version
         uses: actions/setup-node@v3
         with:
-          node-version: '18.x'   # versión estable soportada por Azure
+          node-version: '24.x'   # versión estable soportada por Azure
 
       - name: Install dependencies
         run: |
